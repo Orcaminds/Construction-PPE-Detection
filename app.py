@@ -61,7 +61,7 @@ st.markdown(
             </div>
             <div style="text-align: right;">
                 <span class="badge-safe">🟢 SYSTEM ONLINE</span><br/>
-                <span style="font-size: 0.8rem; color: #9ca3af; font-family: monospace;">YOLO11x Engine v8.4</span>
+                <span style="font-size: 0.8rem; color: #9ca3af; font-family: monospace;">Model: best.pt (Custom PPE Weights)</span>
             </div>
         </div>
     </div>

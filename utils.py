@@ -111,16 +111,16 @@ def compute_metrics(detections):
     other_violations = 0
     
     for d in detections:
-        cls_name = d['class_name']
-        if cls_name in ['person', 'Worker', 'Person']:
+        cls_name = d['class_name'].lower()
+        if cls_name in ['person', 'worker', 'human']:
             total_persons += 1
-        elif cls_name in ['Hardhat', 'Helmet']:
+        elif cls_name in ['hardhat', 'helmet']:
             hardhat_count += 1
-        elif cls_name in ['Safety Vest', 'Vest']:
+        elif cls_name in ['safety vest', 'vest']:
             vest_count += 1
-        elif cls_name == 'NO-Hardhat':
+        elif cls_name in ['no-hardhat', 'no-helmet']:
             no_hardhat_count += 1
-        elif cls_name == 'NO-Vest':
+        elif cls_name in ['no-vest']:
             no_vest_count += 1
         elif d.get('is_violation', False):
             other_violations += 1

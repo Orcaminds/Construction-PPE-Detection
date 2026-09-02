@@ -11,8 +11,9 @@ APP_SUBTITLE = "AI-Powered Real-Time Safety Compliance Monitoring using YOLO11x"
 APP_ICON = "🦺"
 
 # Default Model Settings
-DEFAULT_MODEL = "yolo11x.pt"
+DEFAULT_MODEL = "best.pt" if os.path.exists("best.pt") else "yolo11x.pt"
 AVAILABLE_MODELS = {
+    "🎯 Custom Fine-Tuned PPE Model (best.pt)": "best.pt",
     "YOLO11x (Extra Large - Highest Accuracy)": "yolo11x.pt",
     "YOLO11l (Large - Fast & Accurate)": "yolo11l.pt",
     "YOLO11m (Medium - Balanced)": "yolo11m.pt",
@@ -28,7 +29,9 @@ DEFAULT_IOU = 0.45
 PPE_CLASSES = {
     # Compliant Items
     "Hardhat": {"type": "compliant", "label": "Hardhat / Helmet", "color_hex": "#10B981", "color_bgr": (129, 185, 16)},
+    "helmet": {"type": "compliant", "label": "Hardhat / Helmet", "color_hex": "#10B981", "color_bgr": (129, 185, 16)},
     "Safety Vest": {"type": "compliant", "label": "Safety Vest", "color_hex": "#059669", "color_bgr": (105, 150, 5)},
+    "vest": {"type": "compliant", "label": "Safety Vest", "color_hex": "#059669", "color_bgr": (105, 150, 5)},
     "Mask": {"type": "compliant", "label": "Protective Mask", "color_hex": "#0EA5E9", "color_bgr": (233, 165, 14)},
     "Goggles": {"type": "compliant", "label": "Safety Goggles", "color_hex": "#3B82F6", "color_bgr": (246, 130, 59)},
     "Gloves": {"type": "compliant", "label": "Safety Gloves", "color_hex": "#8B5CF6", "color_bgr": (246, 92, 139)},
@@ -36,12 +39,14 @@ PPE_CLASSES = {
     
     # Non-Compliant / Violations
     "NO-Hardhat": {"type": "violation", "severity": "CRITICAL", "label": "⚠️ NO Hardhat", "color_hex": "#EF4444", "color_bgr": (68, 68, 239)},
+    "no-helmet": {"type": "violation", "severity": "CRITICAL", "label": "⚠️ NO Hardhat", "color_hex": "#EF4444", "color_bgr": (68, 68, 239)},
     "NO-Vest": {"type": "violation", "severity": "CRITICAL", "label": "⚠️ NO Safety Vest", "color_hex": "#F97316", "color_bgr": (22, 115, 249)},
     "NO-Mask": {"type": "violation", "severity": "WARNING", "label": "⚠️ NO Mask", "color_hex": "#F59E0B", "color_bgr": (11, 158, 245)},
     "NO-Gloves": {"type": "violation", "severity": "WARNING", "label": "⚠️ NO Gloves", "color_hex": "#EAB308", "color_bgr": (8, 179, 234)},
     
-    # Standard COCO classes mapping (when standard YOLO11x is used)
+    # Workers / Persons
     "person": {"type": "neutral", "label": "Worker / Person", "color_hex": "#38BDF8", "color_bgr": (248, 189, 56)},
+    "human": {"type": "neutral", "label": "Worker / Person", "color_hex": "#38BDF8", "color_bgr": (248, 189, 56)},
 }
 
 # General COCO to PPE Synthetic Mapping (Fallback for base COCO YOLO11x model)

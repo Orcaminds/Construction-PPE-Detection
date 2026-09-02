@@ -5,6 +5,7 @@ __pycache__/
 
 # Large AI Model Weights (Keep repo lightweight)
 *.pt
+!best.pt
 *.onnx
 *.engine
 
