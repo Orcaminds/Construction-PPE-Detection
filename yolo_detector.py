@@ -80,8 +80,26 @@ class PPEDetector:
 
             # Determine PPE details
             if self.is_custom_ppe_model:
-                class_name = raw_class_name
-                is_violation = "NO-" in class_name or "missing" in class_name.lower() or "violation" in class_name.lower()
+                raw_lower = raw_class_name.lower()
+                # Clean class mapping for display
+                if raw_lower in ["helmet", "hardhat"]:
+                    class_name = "Hardhat"
+                    is_violation = False
+                elif raw_lower in ["no-helmet", "no-hardhat", "without-helmet", "without_hardhat"]:
+                    class_name = "NO-Hardhat"
+                    is_violation = True
+                elif raw_lower in ["vest", "safety vest", "safety-vest"]:
+                    class_name = "Safety Vest"
+                    is_violation = False
+                elif raw_lower in ["no-vest", "without-vest", "without_vest"]:
+                    class_name = "NO-Vest"
+                    is_violation = True
+                elif raw_lower in ["human", "person", "worker"]:
+                    class_name = "Worker"
+                    is_violation = False
+                else:
+                    class_name = raw_class_name
+                    is_violation = "no-" in raw_lower or "missing" in raw_lower or "violation" in raw_lower or "without" in raw_lower
             else:
                 # Using standard COCO model (e.g., base yolo11x.pt)
                 if raw_class_name == "person":
@@ -90,13 +108,12 @@ class PPEDetector:
                     x1, y1, x2, y2 = xyxy
                     person_crop = img_np[max(0, y1):min(img_np.shape[0], y2), max(0, x1):min(img_np.shape[1], x2)]
                     
-                    # Analyze head region (top 25% of person crop)
+                    # Analyze head region (top 28% of person crop)
                     h, w = person_crop.shape[:2]
                     if h > 30 and w > 20:
                         head_crop = person_crop[0:int(h*0.28), :]
                         # Check for bright safety colors (Yellow/Orange/Blue/Red for Hardhats)
                         hsv = cv2.cvtColor(head_crop, cv2.COLOR_RGB2HSV if len(head_crop.shape)==3 else cv2.COLOR_BGR2HSV)
-                        # Yellow/Orange Hardhat color mask
                         yellow_mask = cv2.inRange(hsv, (15, 100, 100), (35, 255, 255))
                         blue_mask = cv2.inRange(hsv, (90, 80, 80), (130, 255, 255))
                         has_hardhat = (np.sum(yellow_mask) > 500) or (np.sum(blue_mask) > 500)
@@ -109,7 +126,6 @@ class PPEDetector:
                         has_vest = (np.sum(green_vest_mask) > 1000) or (np.sum(orange_vest_mask) > 1000)
                         
                         if has_hardhat and has_vest:
-                            # Add synthetic Hardhat & Vest detections for worker
                             detections.append({
                                 'box': [x1, y1, x1 + int(w*0.8), y1 + int(h*0.25)],
                                 'class_name': 'Hardhat',

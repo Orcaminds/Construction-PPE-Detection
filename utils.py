@@ -39,28 +39,39 @@ def draw_bounding_boxes(image_input, detections):
         font_small = ImageFont.load_default()
 
     for det in detections:
-        x1, y1, x2, y2 = det['box']
+        box = det['box']
+        x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
+        # Ensure valid coordinates
+        x1, x2 = max(0, min(x1, x2)), min(width, max(x1, x2))
+        y1, y2 = max(0, min(y1, y2)), min(height, max(y1, y2))
+        
+        if x2 - x1 < 2 or y2 - y1 < 2:
+            continue
+
         cls_name = det['class_name']
         conf = det['confidence']
         is_violation = det.get('is_violation', False)
         
         # Determine color
-        class_meta = PPE_CLASSES.get(cls_name, {})
-        hex_color = class_meta.get('color_hex', '#38BDF8' if not is_violation else '#EF4444')
+        if is_violation:
+            hex_color = "#EF4444" # Bright Red for Violations
+        else:
+            class_meta = PPE_CLASSES.get(cls_name, {})
+            hex_color = class_meta.get('color_hex', '#38BDF8')
         
         # Convert hex to RGBA
         hex_clean = hex_color.lstrip('#')
         rgb_color = tuple(int(hex_clean[i:i+2], 16) for i in (0, 2, 4))
-        fill_alpha = (*rgb_color, 40) # Semi-transparent fill box
+        fill_alpha = (*rgb_color, 35) # Semi-transparent fill box
         stroke_color = (*rgb_color, 245)
         
         box_width = max(2, int(height * 0.004))
         
-        # 1. Semi-transparent fill
+        # 1. Semi-transparent fill & main bounding box
         draw.rectangle([x1, y1, x2, y2], fill=fill_alpha, outline=stroke_color, width=box_width)
         
-        # 2. Draw corner accents for high-tech look
-        corner_len = max(10, int(min(x2-x1, y2-y1) * 0.15))
+        # 2. Draw corner accents for crisp high-tech look
+        corner_len = max(8, int(min(x2-x1, y2-y1) * 0.15))
         # Top-Left
         draw.line([(x1, y1), (x1 + corner_len, y1)], fill=stroke_color, width=box_width+2)
         draw.line([(x1, y1), (x1, y1 + corner_len)], fill=stroke_color, width=box_width+2)
@@ -83,18 +94,23 @@ def draw_bounding_boxes(image_input, detections):
         text_w = text_bbox[2] - text_bbox[0]
         text_h = text_bbox[3] - text_bbox[1]
         
-        # Label position
-        tag_y1 = max(0, y1 - text_h - 10)
-        tag_y2 = max(text_h + 10, y1)
+        tag_h = text_h + 8
+        if y1 - tag_h >= 0:
+            tag_y1 = y1 - tag_h
+            tag_y2 = y1
+        else:
+            tag_y1 = y1
+            tag_y2 = y1 + tag_h
+            
         tag_x1 = x1
-        tag_x2 = x1 + text_w + 16
+        tag_x2 = min(width, x1 + text_w + 14)
         
         # Tag Background Box
-        tag_bg = (*rgb_color, 230)
+        tag_bg = (*rgb_color, 240)
         draw.rectangle([tag_x1, tag_y1, tag_x2, tag_y2], fill=tag_bg)
         
-        # Text shadow & text
-        draw.text((tag_x1 + 8, tag_y1 + 4), label_text, fill=(255, 255, 255, 255), font=font)
+        # Text
+        draw.text((tag_x1 + 6, tag_y1 + 2), label_text, fill=(255, 255, 255, 255), font=font)
 
     return img_pil
 
