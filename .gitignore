@@ -1,0 +1,25 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Large AI Model Weights (Keep repo lightweight)
+*.pt
+*.onnx
+*.engine
+
+# Temporary video/audio files
+temp_*
+*.mp4
+*.avi
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
