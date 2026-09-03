@@ -57,6 +57,12 @@ PPE_CLASSES = {
     "human": {"type": "neutral", "label": "Worker / Person", "color_hex": "#00F0FF", "color_bgr": (255, 240, 0)},
 }
 
+# Clean Display List for UI Multiselect Filtering
+DISPLAY_PPE_CLASSES = [
+    "Worker", "Hardhat", "Safety Vest", "Gloves", "Boots", "Goggles", "Mask",
+    "NO-Hardhat", "NO-Vest", "NO-Gloves", "NO-Boots", "NO-Goggles", "NO-Mask"
+]
+
 # General COCO to PPE Synthetic Mapping (Fallback for base COCO YOLO11x model)
 # If fine-tuned PPE weights are not loaded, standard YOLO11 detects persons/ties/backpacks/etc.
 COCO_PPE_SIMULATION_MAP = {

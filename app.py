@@ -16,7 +16,7 @@ import os
 
 from config import (
     APP_TITLE, APP_SUBTITLE, APP_ICON, DEFAULT_MODEL, AVAILABLE_MODELS,
-    DEFAULT_CONFIDENCE, DEFAULT_IOU, PPE_CLASSES, CUSTOM_CSS
+    DEFAULT_CONFIDENCE, DEFAULT_IOU, PPE_CLASSES, DISPLAY_PPE_CLASSES, CUSTOM_CSS
 )
 from utils import (
     draw_bounding_boxes, compute_metrics, generate_audio_alert_html,
@@ -106,11 +106,10 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("🛡️ Filter PPE Classes")
     
-    all_class_keys = list(PPE_CLASSES.keys())
     selected_classes = st.multiselect(
         "Display Selected Classes:",
-        options=all_class_keys,
-        default=all_class_keys,
+        options=DISPLAY_PPE_CLASSES,
+        default=DISPLAY_PPE_CLASSES,
         help="Filter specific PPE gear or violation alerts."
     )
 

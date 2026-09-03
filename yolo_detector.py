@@ -212,10 +212,21 @@ class PPEDetector:
 
         # Apply selected_classes filter across all detections
         if selected_classes:
-            allowed_set = set(selected_classes)
+            allowed_set = {s.lower() for s in selected_classes}
+            if 'hardhat' in allowed_set:
+                allowed_set.add('helmet')
+            if 'safety vest' in allowed_set:
+                allowed_set.add('vest')
+            if 'worker' in allowed_set:
+                allowed_set.update(['person', 'human'])
+            if 'no-hardhat' in allowed_set:
+                allowed_set.add('no-helmet')
+            if 'no-vest' in allowed_set:
+                allowed_set.add('no-vest')
+
             detections = [
                 d for d in detections
-                if d['class_name'] in allowed_set or d['class_name'].lower() in [s.lower() for s in allowed_set]
+                if d['class_name'].lower() in allowed_set or d['class_name'] in selected_classes
             ]
 
         # Filter duplicates and resolve conflicting detections (e.g., Hardhat vs NO-Hardhat on same head)
