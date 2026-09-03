@@ -5,6 +5,7 @@ executes detection, handles class filtering, and analyzes PPE compliance.
 """
 
 import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 import torch
 import numpy as np
 from PIL import Image
@@ -40,7 +41,7 @@ class PPEDetector:
             self.class_names = self.model.names
             self.is_custom_ppe_model = False
 
-    def predict(self, image_input, conf_threshold=0.40, iou_threshold=0.45, selected_classes=None):
+    def predict(self, image_input, conf_threshold=0.25, iou_threshold=0.45, selected_classes=None):
         """
         Run inference on PIL Image or OpenCV BGR array.
         :return: list of detection dicts: [{box: [x1,y1,x2,y2], class_name, confidence, is_violation, type}]
@@ -108,62 +109,64 @@ class PPEDetector:
                     x1, y1, x2, y2 = xyxy
                     person_crop = img_np[max(0, y1):min(img_np.shape[0], y2), max(0, x1):min(img_np.shape[1], x2)]
                     
-                    # Analyze head region (top 28% of person crop)
-                    h, w = person_crop.shape[:2]
-                    if h > 30 and w > 20:
-                        head_crop = person_crop[0:int(h*0.28), :]
-                        # Check for bright safety colors (Yellow/Orange/Blue/Red for Hardhats)
-                        hsv = cv2.cvtColor(head_crop, cv2.COLOR_RGB2HSV if len(head_crop.shape)==3 else cv2.COLOR_BGR2HSV)
-                        yellow_mask = cv2.inRange(hsv, (15, 100, 100), (35, 255, 255))
-                        blue_mask = cv2.inRange(hsv, (90, 80, 80), (130, 255, 255))
-                        has_hardhat = (np.sum(yellow_mask) > 500) or (np.sum(blue_mask) > 500)
-                        
-                        # Upper torso (25% - 65% of crop)
-                        torso_crop = person_crop[int(h*0.28):int(h*0.65), :]
-                        torso_hsv = cv2.cvtColor(torso_crop, cv2.COLOR_RGB2HSV)
-                        green_vest_mask = cv2.inRange(torso_hsv, (35, 80, 80), (85, 255, 255))
-                        orange_vest_mask = cv2.inRange(torso_hsv, (5, 120, 120), (20, 255, 255))
-                        has_vest = (np.sum(green_vest_mask) > 1000) or (np.sum(orange_vest_mask) > 1000)
-                        
-                        if has_hardhat and has_vest:
-                            detections.append({
-                                'box': [x1, y1, x1 + int(w*0.8), y1 + int(h*0.25)],
-                                'class_name': 'Hardhat',
-                                'confidence': min(0.98, conf + 0.05),
-                                'is_violation': False,
-                                'type': 'compliant'
-                            })
-                            detections.append({
-                                'box': [x1, y1 + int(h*0.25), x2, y1 + int(h*0.65)],
-                                'class_name': 'Safety Vest',
-                                'confidence': min(0.95, conf + 0.02),
-                                'is_violation': False,
-                                'type': 'compliant'
-                            })
-                        elif not has_hardhat:
-                            detections.append({
-                                'box': [x1, y1, x1 + int(w*0.8), y1 + int(h*0.25)],
-                                'class_name': 'NO-Hardhat',
-                                'confidence': 0.88,
-                                'is_violation': True,
-                                'type': 'violation'
-                            })
-                        elif not has_vest:
-                            detections.append({
-                                'box': [x1, y1 + int(h*0.25), x2, y1 + int(h*0.65)],
-                                'class_name': 'NO-Vest',
-                                'confidence': 0.85,
-                                'is_violation': True,
-                                'type': 'violation'
-                            })
+                    if person_crop.size > 0:
+                        h, w = person_crop.shape[:2]
+                        if h > 30 and w > 20:
+                            head_crop = person_crop[0:int(h*0.28), :]
+                            if head_crop.size > 0:
+                                hsv = cv2.cvtColor(head_crop, cv2.COLOR_RGB2HSV if len(head_crop.shape)==3 else cv2.COLOR_BGR2HSV)
+                                yellow_mask = cv2.inRange(hsv, (15, 100, 100), (35, 255, 255))
+                                blue_mask = cv2.inRange(hsv, (90, 80, 80), (130, 255, 255))
+                                has_hardhat = (np.sum(yellow_mask) > 500) or (np.sum(blue_mask) > 500)
+                            else:
+                                has_hardhat = False
+                                
+                            torso_crop = person_crop[int(h*0.28):int(h*0.65), :]
+                            if torso_crop.size > 0:
+                                torso_hsv = cv2.cvtColor(torso_crop, cv2.COLOR_RGB2HSV if len(torso_crop.shape)==3 else cv2.COLOR_BGR2HSV)
+                                green_vest_mask = cv2.inRange(torso_hsv, (35, 80, 80), (85, 255, 255))
+                                orange_vest_mask = cv2.inRange(torso_hsv, (5, 120, 120), (20, 255, 255))
+                                has_vest = (np.sum(green_vest_mask) > 1000) or (np.sum(orange_vest_mask) > 1000)
+                            else:
+                                has_vest = False
+                                
+                            if has_hardhat:
+                                detections.append({
+                                    'box': [x1, y1, x1 + int(w*0.8), y1 + int(h*0.25)],
+                                    'class_name': 'Hardhat',
+                                    'confidence': min(0.98, conf + 0.05),
+                                    'is_violation': False,
+                                    'type': 'compliant'
+                                })
+                            else:
+                                detections.append({
+                                    'box': [x1, y1, x1 + int(w*0.8), y1 + int(h*0.25)],
+                                    'class_name': 'NO-Hardhat',
+                                    'confidence': 0.88,
+                                    'is_violation': True,
+                                    'type': 'violation'
+                                })
+
+                            if has_vest:
+                                detections.append({
+                                    'box': [x1, y1 + int(h*0.25), x2, y1 + int(h*0.65)],
+                                    'class_name': 'Safety Vest',
+                                    'confidence': min(0.95, conf + 0.02),
+                                    'is_violation': False,
+                                    'type': 'compliant'
+                                })
+                            else:
+                                detections.append({
+                                    'box': [x1, y1 + int(h*0.25), x2, y1 + int(h*0.65)],
+                                    'class_name': 'NO-Vest',
+                                    'confidence': 0.85,
+                                    'is_violation': True,
+                                    'type': 'violation'
+                                })
                     is_violation = False
                 else:
                     class_name = COCO_PPE_SIMULATION_MAP.get(raw_class_name, raw_class_name)
                     is_violation = False
-
-            # Filter by selected classes if provided
-            if selected_classes and class_name not in selected_classes and raw_class_name not in selected_classes:
-                continue
 
             detections.append({
                 'box': xyxy,
@@ -173,4 +176,73 @@ class PPEDetector:
                 'type': 'violation' if is_violation else ('compliant' if class_name in PPE_CLASSES and PPE_CLASSES[class_name]['type']=='compliant' else 'neutral')
             })
 
-        return detections
+        # Apply selected_classes filter across all detections
+        if selected_classes:
+            allowed_set = set(selected_classes)
+            detections = [
+                d for d in detections
+                if d['class_name'] in allowed_set or d['class_name'].lower() in [s.lower() for s in allowed_set]
+            ]
+
+        # Filter duplicates and resolve conflicting detections (e.g., Hardhat vs NO-Hardhat on same head)
+        return self._clean_detections(detections)
+
+    def _clean_detections(self, detections):
+        if not detections:
+            return []
+
+        def compute_iou(box1, box2):
+            x1, y1 = max(box1[0], box2[0]), max(box1[1], box2[1])
+            x2, y2 = min(box1[2], box2[2]), min(box1[3], box2[3])
+            inter = max(0, x2 - x1) * max(0, y2 - y1)
+            if inter == 0:
+                return 0.0
+            area1 = (box1[2] - box1[0]) * (box1[3] - box1[1])
+            area2 = (box2[2] - box2[0]) * (box2[3] - box2[1])
+            union = area1 + area2 - inter
+            return inter / float(union) if union > 0 else 0.0
+
+        # Sort by confidence descending
+        sorted_dets = sorted(detections, key=lambda d: d['confidence'], reverse=True)
+        cleaned = []
+
+        for det in sorted_dets:
+            b1 = det['box']
+            c1 = det['class_name']
+            conf1 = det['confidence']
+
+            # Suppress very low confidence violation false positives if compliant item exists
+            if det.get('is_violation', False) and conf1 < 0.28:
+                # Check if high confidence compliant box exists near it
+                has_comp = any(
+                    not d.get('is_violation', False) and compute_iou(b1, d['box']) > 0.25
+                    for d in cleaned
+                )
+                if has_comp:
+                    continue
+
+            keep = True
+            for existing in cleaned:
+                b2 = existing['box']
+                c2 = existing['class_name']
+                iou = compute_iou(b1, b2)
+
+                # 1. High overlap same/similar class duplicate
+                if iou > 0.40 and (c1 == c2 or (c1 in ['Worker', 'person', 'human'] and c2 in ['Worker', 'person', 'human'])):
+                    keep = False
+                    break
+
+                # 2. Hardhat vs NO-Hardhat conflict
+                if iou > 0.25 and {c1, c2} in [{"Hardhat", "NO-Hardhat"}, {"helmet", "no-helmet"}]:
+                    keep = False
+                    break
+
+                # 3. Vest vs NO-Vest conflict
+                if iou > 0.25 and {c1, c2} in [{"Safety Vest", "NO-Vest"}, {"vest", "no-vest"}]:
+                    keep = False
+                    break
+
+            if keep:
+                cleaned.append(det)
+
+        return cleaned

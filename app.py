@@ -50,26 +50,6 @@ def load_yolo_model(model_name_or_path):
     return PPEDetector(model_name_or_path)
 
 
-# 2. Header Banner Section
-st.markdown(
-    f"""
-    <div class="header-banner">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <h1 class="header-title">{APP_ICON} {APP_TITLE}</h1>
-                <p class="header-subtitle">{APP_SUBTITLE}</p>
-            </div>
-            <div style="text-align: right;">
-                <span class="badge-safe">🟢 SYSTEM ONLINE</span><br/>
-                <span style="font-size: 0.8rem; color: #9ca3af; font-family: monospace;">Model: best.pt (Custom PPE Weights)</span>
-            </div>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
 # 3. Sidebar Controls
 with st.sidebar:
     st.image("https://img.icons8.com/color/96/000000/worker-with-road-block.png", width=70)
@@ -107,7 +87,7 @@ with st.sidebar:
     
     conf_thresh = st.slider(
         "Confidence Threshold:",
-        min_value=0.10,
+        min_value=0.05,
         max_value=1.00,
         value=DEFAULT_CONFIDENCE,
         step=0.05,
@@ -137,6 +117,26 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("🔊 Safety Alert Settings")
     enable_audio_alert = st.toggle("Enable Audio Siren on Safety Violation", value=True)
+
+
+# 2. Header Banner Section (Dynamic)
+st.markdown(
+    f"""
+    <div class="header-banner">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 class="header-title">{APP_ICON} {APP_TITLE}</h1>
+                <p class="header-subtitle">{APP_SUBTITLE}</p>
+            </div>
+            <div style="text-align: right;">
+                <span class="badge-safe">🟢 SYSTEM ONLINE</span><br/>
+                <span style="font-size: 0.8rem; color: #9ca3af; font-family: monospace;">Model: {os.path.basename(active_model_path)}</span>
+            </div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 
 # Load Detector Model

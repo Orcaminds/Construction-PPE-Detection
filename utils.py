@@ -38,10 +38,55 @@ def draw_bounding_boxes(image_input, detections):
         font = ImageFont.load_default()
         font_small = ImageFont.load_default()
 
-    for det in detections:
+    placed_tags = []
+
+    # Sort detections by box area descending so larger boxes (Workers) are drawn first
+    sorted_dets = sorted(
+        detections,
+        key=lambda d: (int(d['box'][2]) - int(d['box'][0])) * (int(d['box'][3]) - int(d['box'][1])),
+        reverse=True
+    )
+
+    # Pass 1: Draw bounding box rectangles & corner accents
+    for det in sorted_dets:
         box = det['box']
         x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
-        # Ensure valid coordinates
+        x1, x2 = max(0, min(x1, x2)), min(width, max(x1, x2))
+        y1, y2 = max(0, min(y1, y2)), min(height, max(y1, y2))
+        
+        if x2 - x1 < 2 or y2 - y1 < 2:
+            continue
+
+        cls_name = det['class_name']
+        is_violation = det.get('is_violation', False)
+        
+        class_meta = PPE_CLASSES.get(cls_name, {})
+        hex_color = class_meta.get('color_hex', '#EF4444' if is_violation else '#00F0FF')
+        
+        hex_clean = hex_color.lstrip('#')
+        rgb_color = tuple(int(hex_clean[i:i+2], 16) for i in (0, 2, 4))
+        fill_alpha = (*rgb_color, 25)
+        stroke_color = (*rgb_color, 245)
+        
+        box_width = max(2, int(height * 0.0035))
+        
+        # Draw box rectangle & corners
+        draw.rectangle([x1, y1, x2, y2], fill=fill_alpha, outline=stroke_color, width=box_width)
+        
+        corner_len = max(6, int(min(x2-x1, y2-y1) * 0.12))
+        draw.line([(x1, y1), (x1 + corner_len, y1)], fill=stroke_color, width=box_width+2)
+        draw.line([(x1, y1), (x1, y1 + corner_len)], fill=stroke_color, width=box_width+2)
+        draw.line([(x2, y1), (x2 - corner_len, y1)], fill=stroke_color, width=box_width+2)
+        draw.line([(x2, y1), (x2, y1 + corner_len)], fill=stroke_color, width=box_width+2)
+        draw.line([(x1, y2), (x1 + corner_len, y2)], fill=stroke_color, width=box_width+2)
+        draw.line([(x1, y2), (x1, y2 - corner_len)], fill=stroke_color, width=box_width+2)
+        draw.line([(x2, y2), (x2 - corner_len, y2)], fill=stroke_color, width=box_width+2)
+        draw.line([(x2, y2), (x2, y2 - corner_len)], fill=stroke_color, width=box_width+2)
+
+    # Pass 2: Draw label tags with smart collision avoidance
+    for det in sorted_dets:
+        box = det['box']
+        x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
         x1, x2 = max(0, min(x1, x2)), min(width, max(x1, x2))
         y1, y2 = max(0, min(y1, y2)), min(height, max(y1, y2))
         
@@ -51,66 +96,60 @@ def draw_bounding_boxes(image_input, detections):
         cls_name = det['class_name']
         conf = det['confidence']
         is_violation = det.get('is_violation', False)
-        
-        # Determine color
+        class_meta = PPE_CLASSES.get(cls_name, {})
+
         if is_violation:
-            hex_color = "#EF4444" # Bright Red for Violations
+            hex_color = class_meta.get('color_hex', '#EF4444')
+            label_text = f"⚠️ {cls_name} {conf:.0%}"
         else:
-            class_meta = PPE_CLASSES.get(cls_name, {})
-            hex_color = class_meta.get('color_hex', '#38BDF8')
-        
-        # Convert hex to RGBA
+            hex_color = class_meta.get('color_hex', '#00F0FF')
+            label_text = f"{cls_name} {conf:.0%}"
+
         hex_clean = hex_color.lstrip('#')
         rgb_color = tuple(int(hex_clean[i:i+2], 16) for i in (0, 2, 4))
-        fill_alpha = (*rgb_color, 35) # Semi-transparent fill box
-        stroke_color = (*rgb_color, 245)
         
-        box_width = max(2, int(height * 0.004))
-        
-        # 1. Semi-transparent fill & main bounding box
-        draw.rectangle([x1, y1, x2, y2], fill=fill_alpha, outline=stroke_color, width=box_width)
-        
-        # 2. Draw corner accents for crisp high-tech look
-        corner_len = max(8, int(min(x2-x1, y2-y1) * 0.15))
-        # Top-Left
-        draw.line([(x1, y1), (x1 + corner_len, y1)], fill=stroke_color, width=box_width+2)
-        draw.line([(x1, y1), (x1, y1 + corner_len)], fill=stroke_color, width=box_width+2)
-        # Top-Right
-        draw.line([(x2, y1), (x2 - corner_len, y1)], fill=stroke_color, width=box_width+2)
-        draw.line([(x2, y1), (x2, y1 + corner_len)], fill=stroke_color, width=box_width+2)
-        # Bottom-Left
-        draw.line([(x1, y2), (x1 + corner_len, y2)], fill=stroke_color, width=box_width+2)
-        draw.line([(x1, y2), (x1, y2 - corner_len)], fill=stroke_color, width=box_width+2)
-        # Bottom-Right
-        draw.line([(x2, y2), (x2 - corner_len, y2)], fill=stroke_color, width=box_width+2)
-        draw.line([(x2, y2), (x2, y2 - corner_len)], fill=stroke_color, width=box_width+2)
-        
-        # 3. Label Tag Header
-        label_text = f"{cls_name} {conf:.0%}"
-        if is_violation:
-            label_text = f"⚠️ {label_text}"
-            
         text_bbox = draw.textbbox((0, 0), label_text, font=font)
         text_w = text_bbox[2] - text_bbox[0]
         text_h = text_bbox[3] - text_bbox[1]
         
+        tag_w = text_w + 14
         tag_h = text_h + 8
-        if y1 - tag_h >= 0:
-            tag_y1 = y1 - tag_h
-            tag_y2 = y1
+
+        # Candidate placement positions (clamped to prevent right-edge clipping)
+        cand_x = max(2, min(width - tag_w - 4, x1))
+        if y1 - tag_h - 2 >= 0:
+            cand_y = y1 - tag_h - 2
         else:
-            tag_y1 = y1
-            tag_y2 = y1 + tag_h
-            
-        tag_x1 = x1
-        tag_x2 = min(width, x1 + text_w + 14)
-        
-        # Tag Background Box
+            cand_y = y1 + 3
+
+        # Check collision helper
+        def has_collision(rx1, ry1, rx2, ry2):
+            for px1, py1, px2, py2 in placed_tags:
+                if not (rx2 <= px1 or rx1 >= px2 or ry2 <= py1 or ry1 >= py2):
+                    return True
+            return False
+
+        cur_rx1, cur_ry1 = cand_x, cand_y
+        cur_rx2, cur_ry2 = cur_rx1 + tag_w, cur_ry1 + tag_h
+
+        # Shift tag down/left if colliding with another tag
+        attempts = 0
+        while has_collision(cur_rx1, cur_ry1, cur_rx2, cur_ry2) and attempts < 8:
+            cur_ry1 += tag_h + 3
+            cur_ry2 = cur_ry1 + tag_h
+            if cur_ry2 > height - tag_h:
+                cur_rx1 = max(2, cur_rx1 - 25)
+                cur_rx2 = cur_rx1 + tag_w
+                cur_ry1 = max(2, y1 - tag_h)
+                cur_ry2 = cur_ry1 + tag_h
+            attempts += 1
+
+        placed_tags.append((cur_rx1, cur_ry1, cur_rx2, cur_ry2))
+
+        # Tag background & text
         tag_bg = (*rgb_color, 240)
-        draw.rectangle([tag_x1, tag_y1, tag_x2, tag_y2], fill=tag_bg)
-        
-        # Text
-        draw.text((tag_x1 + 6, tag_y1 + 2), label_text, fill=(255, 255, 255, 255), font=font)
+        draw.rectangle([cur_rx1, cur_ry1, cur_rx2, cur_ry2], fill=tag_bg)
+        draw.text((cur_rx1 + 7, cur_ry1 + 3), label_text, fill=(255, 255, 255, 255), font=font)
 
     return img_pil
 
