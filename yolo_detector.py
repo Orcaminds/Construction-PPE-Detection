@@ -219,9 +219,9 @@ class PPEDetector:
             ]
 
         # Filter duplicates and resolve conflicting detections (e.g., Hardhat vs NO-Hardhat on same head)
-        return self._clean_detections(detections)
+        return self._clean_detections(detections, img_np=img_np)
 
-    def _clean_detections(self, detections):
+    def _clean_detections(self, detections, img_np=None):
         if not detections:
             return []
 
@@ -323,19 +323,20 @@ class PPEDetector:
 
             if not has_hardhat and not has_no_hardhat_already:
                 # Inspect head crop colors to avoid false NO-Hardhat on white/light helmets
-                hx1, hy1 = max(0, head_box[0]), max(0, head_box[1])
-                hx2, hy2 = min(img_np.shape[1], head_box[2]), min(img_np.shape[0], head_box[3])
-                h_crop = img_np[hy1:hy2, hx1:hx2]
-                
                 is_helmet_present = False
-                if h_crop.size > 0:
-                    hsv_h = cv2.cvtColor(h_crop, cv2.COLOR_RGB2HSV if len(h_crop.shape)==3 else cv2.COLOR_BGR2HSV)
-                    w_pixels = np.sum(cv2.inRange(hsv_h, (0, 0, 155), (180, 85, 255)) > 0)
-                    y_pixels = np.sum(cv2.inRange(hsv_h, (12, 80, 100), (38, 255, 255)) > 0)
-                    b_pixels = np.sum(cv2.inRange(hsv_h, (85, 60, 60), (135, 255, 255)) > 0)
-                    r_pixels = np.sum(cv2.inRange(hsv_h, (0, 90, 90), (12, 255, 255)) > 0) + np.sum(cv2.inRange(hsv_h, (165, 90, 90), (180, 255, 255)) > 0)
-                    if (w_pixels + y_pixels + b_pixels + r_pixels) > 300:
-                        is_helmet_present = True
+                if img_np is not None:
+                    hx1, hy1 = max(0, head_box[0]), max(0, head_box[1])
+                    hx2, hy2 = min(img_np.shape[1], head_box[2]), min(img_np.shape[0], head_box[3])
+                    h_crop = img_np[hy1:hy2, hx1:hx2]
+                    
+                    if h_crop.size > 0:
+                        hsv_h = cv2.cvtColor(h_crop, cv2.COLOR_RGB2HSV if len(h_crop.shape)==3 else cv2.COLOR_BGR2HSV)
+                        w_pixels = np.sum(cv2.inRange(hsv_h, (0, 0, 155), (180, 85, 255)) > 0)
+                        y_pixels = np.sum(cv2.inRange(hsv_h, (12, 80, 100), (38, 255, 255)) > 0)
+                        b_pixels = np.sum(cv2.inRange(hsv_h, (85, 60, 60), (135, 255, 255)) > 0)
+                        r_pixels = np.sum(cv2.inRange(hsv_h, (0, 90, 90), (12, 255, 255)) > 0) + np.sum(cv2.inRange(hsv_h, (165, 90, 90), (180, 255, 255)) > 0)
+                        if (w_pixels + y_pixels + b_pixels + r_pixels) > 300:
+                            is_helmet_present = True
 
                 if is_helmet_present:
                     extra_violations.append({
