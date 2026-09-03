@@ -37,12 +37,19 @@ PPE_CLASSES = {
     "Gloves": {"type": "compliant", "label": "Safety Gloves", "color_hex": "#A855F7", "color_bgr": (247, 85, 168)}, # Neon Purple
     "Boots": {"type": "compliant", "label": "Safety Boots", "color_hex": "#6366F1", "color_bgr": (241, 102, 99)}, # Indigo
     
-    # Non-Compliant / Violations (Distinct Red/Orange Alerts)
+    # Non-Compliant / Violations ("NO-" missing gear classes with distinct warning colors)
     "NO-Hardhat": {"type": "violation", "severity": "CRITICAL", "label": "⚠️ NO Hardhat", "color_hex": "#EF4444", "color_bgr": (68, 68, 239)},
     "no-helmet": {"type": "violation", "severity": "CRITICAL", "label": "⚠️ NO Hardhat", "color_hex": "#EF4444", "color_bgr": (68, 68, 239)},
     "NO-Vest": {"type": "violation", "severity": "CRITICAL", "label": "⚠️ NO Safety Vest", "color_hex": "#FF3366", "color_bgr": (102, 51, 255)},
-    "NO-Mask": {"type": "violation", "severity": "WARNING", "label": "⚠️ NO Mask", "color_hex": "#F59E0B", "color_bgr": (11, 158, 245)},
+    "no-vest": {"type": "violation", "severity": "CRITICAL", "label": "⚠️ NO Safety Vest", "color_hex": "#FF3366", "color_bgr": (102, 51, 255)},
     "NO-Gloves": {"type": "violation", "severity": "WARNING", "label": "⚠️ NO Gloves", "color_hex": "#EAB308", "color_bgr": (8, 179, 234)},
+    "no-gloves": {"type": "violation", "severity": "WARNING", "label": "⚠️ NO Gloves", "color_hex": "#EAB308", "color_bgr": (8, 179, 234)},
+    "NO-Boots": {"type": "violation", "severity": "WARNING", "label": "⚠️ NO Boots", "color_hex": "#FF5252", "color_bgr": (82, 82, 255)},
+    "no-boots": {"type": "violation", "severity": "WARNING", "label": "⚠️ NO Boots", "color_hex": "#FF5252", "color_bgr": (82, 82, 255)},
+    "NO-Goggles": {"type": "violation", "severity": "WARNING", "label": "⚠️ NO Goggles", "color_hex": "#E11D48", "color_bgr": (72, 29, 225)},
+    "no-goggles": {"type": "violation", "severity": "WARNING", "label": "⚠️ NO Goggles", "color_hex": "#E11D48", "color_bgr": (72, 29, 225)},
+    "NO-Mask": {"type": "violation", "severity": "WARNING", "label": "⚠️ NO Mask", "color_hex": "#F59E0B", "color_bgr": (11, 158, 245)},
+    "no-mask": {"type": "violation", "severity": "WARNING", "label": "⚠️ NO Mask", "color_hex": "#F59E0B", "color_bgr": (11, 158, 245)},
     
     # Workers / Persons (Electric Cyan)
     "Worker": {"type": "neutral", "label": "Worker / Person", "color_hex": "#00F0FF", "color_bgr": (255, 240, 0)},

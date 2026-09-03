@@ -86,14 +86,38 @@ class PPEDetector:
                 if raw_lower in ["helmet", "hardhat"]:
                     class_name = "Hardhat"
                     is_violation = False
-                elif raw_lower in ["no-helmet", "no-hardhat", "without-helmet", "without_hardhat"]:
+                elif raw_lower in ["no-helmet", "no-hardhat", "without-helmet", "without_hardhat", "missing-hardhat", "missing-helmet"]:
                     class_name = "NO-Hardhat"
                     is_violation = True
                 elif raw_lower in ["vest", "safety vest", "safety-vest"]:
                     class_name = "Safety Vest"
                     is_violation = False
-                elif raw_lower in ["no-vest", "without-vest", "without_vest"]:
+                elif raw_lower in ["no-vest", "without-vest", "without_vest", "missing-vest"]:
                     class_name = "NO-Vest"
+                    is_violation = True
+                elif raw_lower in ["gloves", "glove", "safety-gloves", "safety gloves"]:
+                    class_name = "Gloves"
+                    is_violation = False
+                elif raw_lower in ["no-gloves", "no-glove", "without-gloves", "without_gloves", "missing-gloves"]:
+                    class_name = "NO-Gloves"
+                    is_violation = True
+                elif raw_lower in ["boots", "boot", "shoes", "safety-boots", "safety boots"]:
+                    class_name = "Boots"
+                    is_violation = False
+                elif raw_lower in ["no-boots", "no-boot", "without-boots", "without_boots", "missing-boots"]:
+                    class_name = "NO-Boots"
+                    is_violation = True
+                elif raw_lower in ["goggles", "glasses", "safety-goggles", "safety goggles"]:
+                    class_name = "Goggles"
+                    is_violation = False
+                elif raw_lower in ["no-goggles", "no-goggle", "without-goggles", "without_goggles", "missing-goggles"]:
+                    class_name = "NO-Goggles"
+                    is_violation = True
+                elif raw_lower in ["mask", "face-mask", "protective-mask"]:
+                    class_name = "Mask"
+                    is_violation = False
+                elif raw_lower in ["no-mask", "without-mask", "without_mask", "missing-mask"]:
+                    class_name = "NO-Mask"
                     is_violation = True
                 elif raw_lower in ["human", "person", "worker"]:
                     class_name = "Worker"

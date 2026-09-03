@@ -161,8 +161,17 @@ def compute_metrics(detections):
     total_persons = 0
     hardhat_count = 0
     vest_count = 0
+    gloves_count = 0
+    boots_count = 0
+    goggles_count = 0
+    mask_count = 0
+
     no_hardhat_count = 0
     no_vest_count = 0
+    no_gloves_count = 0
+    no_boots_count = 0
+    no_goggles_count = 0
+    no_mask_count = 0
     other_violations = 0
     
     for d in detections:
@@ -173,10 +182,26 @@ def compute_metrics(detections):
             hardhat_count += 1
         elif cls_name in ['safety vest', 'vest']:
             vest_count += 1
+        elif cls_name in ['gloves', 'glove']:
+            gloves_count += 1
+        elif cls_name in ['boots', 'boot']:
+            boots_count += 1
+        elif cls_name in ['goggles', 'glasses']:
+            goggles_count += 1
+        elif cls_name in ['mask']:
+            mask_count += 1
         elif cls_name in ['no-hardhat', 'no-helmet']:
             no_hardhat_count += 1
         elif cls_name in ['no-vest']:
             no_vest_count += 1
+        elif cls_name in ['no-gloves', 'no-glove']:
+            no_gloves_count += 1
+        elif cls_name in ['no-boots', 'no-boot']:
+            no_boots_count += 1
+        elif cls_name in ['no-goggles', 'no-goggle']:
+            no_goggles_count += 1
+        elif cls_name in ['no-mask']:
+            no_mask_count += 1
         elif d.get('is_violation', False):
             other_violations += 1
             
@@ -185,7 +210,10 @@ def compute_metrics(detections):
     if worker_count == 0 and len(detections) > 0:
         worker_count = len(detections)
         
-    total_violations = no_hardhat_count + no_vest_count + other_violations
+    total_violations = (
+        no_hardhat_count + no_vest_count + no_gloves_count + 
+        no_boots_count + no_goggles_count + no_mask_count + other_violations
+    )
     
     # Calculate safety compliance score
     if worker_count > 0:
@@ -199,8 +227,16 @@ def compute_metrics(detections):
         "total_violations": total_violations,
         "hardhat_count": hardhat_count,
         "vest_count": vest_count,
+        "gloves_count": gloves_count,
+        "boots_count": boots_count,
+        "goggles_count": goggles_count,
+        "mask_count": mask_count,
         "no_hardhat_count": no_hardhat_count,
         "no_vest_count": no_vest_count,
+        "no_gloves_count": no_gloves_count,
+        "no_boots_count": no_boots_count,
+        "no_goggles_count": no_goggles_count,
+        "no_mask_count": no_mask_count,
         "other_violations": other_violations,
         "compliance_pct": compliance_pct,
         "status": "DANGER" if total_violations > 0 else "SAFE"
