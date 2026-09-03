@@ -139,9 +139,19 @@ class PPEDetector:
                             head_crop = person_crop[0:int(h*0.28), :]
                             if head_crop.size > 0:
                                 hsv = cv2.cvtColor(head_crop, cv2.COLOR_RGB2HSV if len(head_crop.shape)==3 else cv2.COLOR_BGR2HSV)
-                                yellow_mask = cv2.inRange(hsv, (15, 100, 100), (35, 255, 255))
-                                blue_mask = cv2.inRange(hsv, (90, 80, 80), (130, 255, 255))
-                                has_hardhat = (np.sum(yellow_mask) > 500) or (np.sum(blue_mask) > 500)
+                                white_m = cv2.inRange(hsv, (0, 0, 160), (180, 80, 255))
+                                yellow_m = cv2.inRange(hsv, (12, 80, 100), (38, 255, 255))
+                                blue_m = cv2.inRange(hsv, (85, 60, 60), (135, 255, 255))
+                                red_m1 = cv2.inRange(hsv, (0, 90, 90), (12, 255, 255))
+                                red_m2 = cv2.inRange(hsv, (165, 90, 90), (180, 255, 255))
+                                orange_m = cv2.inRange(hsv, (12, 90, 90), (25, 255, 255))
+                                green_m = cv2.inRange(hsv, (35, 65, 65), (85, 255, 255))
+                                
+                                tot_pixels = (
+                                    np.sum(white_m > 0) + np.sum(yellow_m > 0) + np.sum(blue_m > 0) +
+                                    np.sum(red_m1 > 0) + np.sum(red_m2 > 0) + np.sum(orange_m > 0) + np.sum(green_m > 0)
+                                )
+                                has_hardhat = (tot_pixels > 350)
                             else:
                                 has_hardhat = False
                                 
@@ -312,13 +322,37 @@ class PPEDetector:
             )
 
             if not has_hardhat and not has_no_hardhat_already:
-                extra_violations.append({
-                    'box': head_box,
-                    'class_name': 'NO-Hardhat',
-                    'confidence': max(0.78, min(0.95, w_conf + 0.18)),
-                    'is_violation': True,
-                    'type': 'violation'
-                })
+                # Inspect head crop colors to avoid false NO-Hardhat on white/light helmets
+                hx1, hy1 = max(0, head_box[0]), max(0, head_box[1])
+                hx2, hy2 = min(img_np.shape[1], head_box[2]), min(img_np.shape[0], head_box[3])
+                h_crop = img_np[hy1:hy2, hx1:hx2]
+                
+                is_helmet_present = False
+                if h_crop.size > 0:
+                    hsv_h = cv2.cvtColor(h_crop, cv2.COLOR_RGB2HSV if len(h_crop.shape)==3 else cv2.COLOR_BGR2HSV)
+                    w_pixels = np.sum(cv2.inRange(hsv_h, (0, 0, 155), (180, 85, 255)) > 0)
+                    y_pixels = np.sum(cv2.inRange(hsv_h, (12, 80, 100), (38, 255, 255)) > 0)
+                    b_pixels = np.sum(cv2.inRange(hsv_h, (85, 60, 60), (135, 255, 255)) > 0)
+                    r_pixels = np.sum(cv2.inRange(hsv_h, (0, 90, 90), (12, 255, 255)) > 0) + np.sum(cv2.inRange(hsv_h, (165, 90, 90), (180, 255, 255)) > 0)
+                    if (w_pixels + y_pixels + b_pixels + r_pixels) > 300:
+                        is_helmet_present = True
+
+                if is_helmet_present:
+                    extra_violations.append({
+                        'box': head_box,
+                        'class_name': 'Hardhat',
+                        'confidence': max(0.85, min(0.96, w_conf + 0.10)),
+                        'is_violation': False,
+                        'type': 'compliant'
+                    })
+                else:
+                    extra_violations.append({
+                        'box': head_box,
+                        'class_name': 'NO-Hardhat',
+                        'confidence': max(0.78, min(0.95, w_conf + 0.18)),
+                        'is_violation': True,
+                        'type': 'violation'
+                    })
 
         cleaned.extend(extra_violations)
         return cleaned
