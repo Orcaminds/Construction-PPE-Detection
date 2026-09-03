@@ -269,4 +269,56 @@ class PPEDetector:
             if keep:
                 cleaned.append(det)
 
+        # --- Worker PPE Compliance Verification Pass ---
+        # Automatically detect missing vest/hardhat for any detected worker
+        workers = [d for d in cleaned if d['class_name'] in ['Worker', 'person', 'human']]
+        extra_violations = []
+
+        for w in workers:
+            wx1, wy1, wx2, wy2 = w['box']
+            w_w = max(10, wx2 - wx1)
+            w_h = max(10, wy2 - wy1)
+            w_conf = w['confidence']
+
+            # 1. Torso Vest Check
+            torso_box = [wx1, wy1 + int(w_h * 0.25), wx2, wy1 + int(w_h * 0.70)]
+            has_vest = any(
+                d['class_name'] in ['Safety Vest', 'vest'] and compute_iou(torso_box, d['box']) > 0.08
+                for d in cleaned
+            )
+            has_no_vest_already = any(
+                d['class_name'] in ['NO-Vest', 'no-vest'] and compute_iou(torso_box, d['box']) > 0.08
+                for d in cleaned
+            )
+
+            if not has_vest and not has_no_vest_already:
+                extra_violations.append({
+                    'box': torso_box,
+                    'class_name': 'NO-Vest',
+                    'confidence': max(0.75, min(0.92, w_conf + 0.15)),
+                    'is_violation': True,
+                    'type': 'violation'
+                })
+
+            # 2. Head Hardhat Check
+            head_box = [wx1, wy1, wx1 + int(w_w * 0.85), wy1 + int(w_h * 0.28)]
+            has_hardhat = any(
+                d['class_name'] in ['Hardhat', 'helmet'] and compute_iou(head_box, d['box']) > 0.08
+                for d in cleaned
+            )
+            has_no_hardhat_already = any(
+                d['class_name'] in ['NO-Hardhat', 'no-hardhat'] and compute_iou(head_box, d['box']) > 0.08
+                for d in cleaned
+            )
+
+            if not has_hardhat and not has_no_hardhat_already:
+                extra_violations.append({
+                    'box': head_box,
+                    'class_name': 'NO-Hardhat',
+                    'confidence': max(0.78, min(0.95, w_conf + 0.18)),
+                    'is_violation': True,
+                    'type': 'violation'
+                })
+
+        cleaned.extend(extra_violations)
         return cleaned
